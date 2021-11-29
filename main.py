@@ -1,47 +1,92 @@
 import subprocess
-import getpass
 import json
 
-userEMAIL, userSUBDOMAIN, userPASSWORD = "","",""
+userEMAIL, userSUBDOMAIN, userTOKEN = "","",""
 parsed = []
 
-def prettyPrintTicket(ID):
-    print(ID)
+def getAPI():
+    global userTOKEN
+    file = open("token.txt", 'r')
+    userTOKEN = file.readline()
+
+
+def prettyPrintTicket(ID, ticketsFile):
+    data = subprocess.Popen(["curl3.bat", userEMAIL, userSUBDOMAIN, str(ID), userTOKEN])
+    data.communicate()
+    loadTicketFile(ticketsFile)
+    printTicketList(parsed)
+    if(errorCheck("ticket.json")>0):
+        return -1
+    loadTicketFile("ticket.json")
+    ticket = parsed['ticket']
+
+    print(f"\n\nSTATUS: {ticket['status']}\nPRIORITY: {ticket['priority']}\nID: {ticket['id']}\nCREATED AT: {ticket['created_at']}\nSUBJECT:{ticket['raw_subject']}\n\nDESCRIPTION:\n{ticket['description']}\n\n")
+    return 0
 
 def getUserInfo():
-    global userEMAIL, userSUBDOMAIN, userPASSWORD
+    global userEMAIL, userSUBDOMAIN
     userEMAIL = input('Email:')
     userSUBDOMAIN = input('Subdomain:')
-    userPASSWORD = getpass.getpass('Password(hidden):')
+    return userEMAIL, userSUBDOMAIN
 
-def updateJSONFile(URL):
-    #subprocess.call(['bash','curl.sh', userEMAIL, userPASSWORD])
-    
-    print(userPASSWORD)
-    print(URL)
-    data = subprocess.Popen(["curl.bat", userEMAIL, URL, userPASSWORD, "25"])
+def errorCheck(fileName):
+    try:
+        fileA = open(fileName, 'r')
+        errorJSON = json.load(fileA)
+    except:
+        print("ERROR LOADING TICKETS.JSON, RETYPE IN PASSWORD")
+        return 1
+    try:
+        print("\n\n\n\n\nERROR\n\nTITLE", errorJSON['error']['title'],"\nMESSAGE:", errorJSON['error']['message'], "\n\n")
+        return 1
+    except:
+        try:
+            print("\n\n\n\n\nERROR\n\nTITLE", errorJSON['error'],"\nMESSAGE:", errorJSON['description'], "\n\n")
+            return 1
+        except:
+            return 0
+
+def initJSONFile(URL: str):
+    URL = URL.replace('%5B', '[')
+    URL = URL.replace('%5D', ']')
+    data = subprocess.Popen(["curl.bat", userEMAIL, URL, userTOKEN, "25"])
     data.communicate()
 
-def printTicketList():
+def updateJSONFile(URL: str):
+    URL = URL.replace('%5B', '[')
+    URL = URL.replace('%5D', ']')
+    URL = URL.replace('%3D', '=')
+    URL = URL.replace('&page[size]=25', '')
+    print(userTOKEN)
+    data = subprocess.Popen(["curl2.bat", userEMAIL, userTOKEN, URL, ""])
+    data.communicate()
+
+def printTicketList(data):
     print("\n######################################\n") 
-    print("ID: \t Subject: \n")
-    for ticket in parsed['tickets']:
-        print(f"{ticket['id']} \t {ticket['raw_subject']}")
+    print("Status:\tPriority:\tID:\tSubject:\t\n")
+    for ticket in data['tickets']:
+        print(f"{ticket['status']}\t{ticket['priority']}\t{ticket['id']}\t{ticket['raw_subject']}")
     print("")
 
-def loadTicketFile():
+def loadTicketFile(fileName):
     global parsed
-    fileA = open("tickets.json", 'r')
+    parsed = None
+    fileA = open(fileName, 'r')
     parsed = json.load(fileA)
-    printTicketList()
     fileA.close()
     
 
 def main():
-    print("\t------ Welcome to the Greatest Zendesk Ticket Viewer You'll Ever See ------")
-    getUserInfo()
-    updateJSONFile(f"https://{userSUBDOMAIN}.zendesk.com/api/v2/tickets.json?page[size]")
-    loadTicketFile()
+    print("\n\n\t------ Welcome to the Greatest Zendesk Ticket Viewer You'll Ever See ------\n")
+    getAPI()
+    while True:
+        getUserInfo()
+        initJSONFile(f"https://{userSUBDOMAIN}.zendesk.com/api/v2/tickets.json?page[size]")
+        if(errorCheck("tickets.json") == 0):
+            break;
+    
+    loadTicketFile("tickets.json")
+    printTicketList(parsed)
     run = True
 
     while run:
@@ -50,12 +95,21 @@ def main():
         ticketID = -1
         match choice:
             case "P":
+                loadTicketFile("tickets.json")
                 updateJSONFile(parsed['links']['prev'])
-                printTicketList()
+                errorCheck("tickets.json")
+                loadTicketFile("tickets.json")
+                printTicketList(parsed)
                 continue
             case "N":
-                updateJSONFile(parsed['links']['next'])
-                printTicketList()
+                loadTicketFile("tickets.json")
+                if parsed['meta']['has_more']:
+                    updateJSONFile(parsed['links']['next'])
+                    errorCheck("tickets.json")
+                    loadTicketFile("tickets.json")
+                else:
+                    print("\n Reached end of list!")
+                printTicketList(parsed)
                 continue
             case "Q":
                 print("Thank you for using the Ticket Viewer!")
@@ -66,9 +120,9 @@ def main():
                 except:
                     print("Improper variable entered")
                     continue
-                print(ticketID) 
+                
+                prettyPrintTicket(ticketID, "tickets.json") 
           
 
 if(__name__=="__main__"):
     main()
-

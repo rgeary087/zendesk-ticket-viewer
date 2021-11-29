@@ -1,0 +1,26 @@
+Welcome to Ryan Geary's Znedesk Ticket Viewer API implementation!
+
+My code was written in Python and Windows Batch Scripting!
+
+My implementation also requires that you have a Token API. If you are on the Zendesk Recruitment Team, I have sent it in the email along with this repository.
+
+For it to work, type the token, and only that token, in the token.txt file in this directory. Then you should be all set to go!
+
+To run this program, you can download my code and use the command:
+
+python main.py
+
+while in the folder of the program.
+
+My implementation requires Python 3.xx to be installed, as well as curl.exe to be able to be run from the command line.
+
+Chances are, curl.exe is on your computer if you have a Windows 10 computer and you update it semi-often.
+
+If not, check out this super helpful Stack Overflow post on it!
+
+https://stackoverflow.com/questions/9507353/how-do-i-install-and-use-curl-on-windows
+
+From there, my program is fairly self-explanatory in the GUI.
+
+For unit-testing: 
+
