@@ -22,5 +22,5 @@ https://stackoverflow.com/questions/9507353/how-do-i-install-and-use-curl-on-win
 
 From there, my program is fairly self-explanatory in the GUI.
 
-For unit-testing: 
+For unit-testing: update the proper token variable in testing.py and run it!
 
